@@ -20,10 +20,11 @@
 #    is capped at major.minor; the patch divergence (e.g. igraph 2.3.4 local vs
 #    2.3.1 wasm) is silent.
 
-root <- normalizePath(".")                 # public/ (project root)
+root <- normalizePath(".")                 # project root (public/ locally)
 stopifnot(
-  "R must be launched from the project root (public/)" =
-    basename(root) == "public" && file.exists(file.path(root, "uvr.toml"))
+  "R must be launched from the project root (public/ locally, repo root in CI)" =
+    (basename(root) == "public" || file.exists(file.path(root, ".github"))) &&
+      file.exists(file.path(root, "uvr.toml"))
 )
 
 docs  <- file.path(root, "docs")

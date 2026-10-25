@@ -45,10 +45,15 @@ jobs:
       - name: Install uvr (R wrapper + binary) and shinylive
         shell: Rscript {0}
         run: |
-          install.packages("remotes")
+          # Use the Posit Package Manager binary repo exposed by setup-r
+          # (use-public-rspm); plain install.packages() otherwise has no CRAN mirror.
+          options(repos = c(CRAN = Sys.getenv("RSPM", "https://packagemanager.posit.co/cran/latest")))
+          install.packages(c("remotes", "jsonlite"))
           remotes::install_cran("shinylive")
           remotes::install_github("nbafrank/uvr-r")
-          # Install the uvr (CLI) binary; placed in the home directory, added to PATH below.
+          # Install the uvr (CLI) binary into ~/.cargo/bin (jsonlite is needed to
+          # download the prebuilt binary). Later steps don't put it on PATH, but
+          # uvr's binary lookup falls back to that path, so sync works.
           uvr::install_uvr()
 
       # Build the pinned library (.uvr/library/). On the next R startup the root
@@ -56,6 +61,7 @@ jobs:
       - name: Sync pinned packages (uvr)
         shell: Rscript {0}
         run: |
+          options(repos = c(CRAN = Sys.getenv("RSPM", "https://packagemanager.posit.co/cran/latest")))
           uvr::sync()
 
       # Same script as the local export: stages a flat copy, re-syncs (no-op) and
@@ -64,6 +70,7 @@ jobs:
       - name: Export app to docs/
         shell: Rscript {0}
         run: |
+          options(repos = c(CRAN = Sys.getenv("RSPM", "https://packagemanager.posit.co/cran/latest")))
           source("export-docs.R")
 
       # Archive docs/ for the Pages deployment.
