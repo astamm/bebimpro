@@ -40,3 +40,5 @@
 # --- 5) Never commit generated state or private content, even if a
 #        whitelisted path ever grows one ---
 **/.DS_Store
+# transient export staging dir (cleaned up on exit by export-docs.R)
+**/bebimpro-stage-*/

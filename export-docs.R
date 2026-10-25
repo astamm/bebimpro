@@ -27,32 +27,38 @@ stopifnot(
       file.exists(file.path(root, "uvr.toml"))
 )
 
-docs  <- file.path(root, "docs")
-app_files <- c("app.R", "app-utils.R", "graph-model.R")
+# The whole export runs inside a function so that on.exit() reliably fires on both
+# success and error (on.exit does NOT fire at the top level of an Rscript, which
+# left staging dirs behind and made the export fragile).
+main <- function(root) {
+  docs <- file.path(root, "docs")
+  app_files <- c("app.R", "app-utils.R", "graph-model.R")
 
-# Build the flat staging copy in a temporary directory and always clean it up,
-# even if the export fails partway through.
-stage <- tempfile("bebimpro-stage-")
-# recursive=TRUE + showWarnings=FALSE so staging is self-contained even if the
-# parent temp dir is missing (seen in CI); tempfile() guarantees the path is unique.
-dir.create(stage, recursive = TRUE, showWarnings = FALSE)
-on.exit(unlink(stage, recursive = TRUE), add = TRUE)
+  # Flat staging copy in a unique dir under the project root (guaranteed to exist
+  # locally and in CI; the OS temp dir proved unreliable on the CI runner). Always
+  # cleaned up on exit, so nothing persists in the repo.
+  stage <- tempfile("bebimpro-stage-", tmpdir = root)
+  dir.create(stage, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(stage, recursive = TRUE), add = TRUE)
 
-src <- c(
-  file.path(root, "R", "graph-model.R"),
-  file.path(root, "R", "interactions-app", "app-utils.R"),
-  file.path(root, "R", "interactions-app", "app.R")
-)
-ok <- file.copy(src, file.path(stage, basename(src)), overwrite = TRUE)
-stopifnot("Could not stage the app files into the export dir" = all(ok))
+  src <- c(
+    file.path(root, "R", "graph-model.R"),
+    file.path(root, "R", "interactions-app", "app-utils.R"),
+    file.path(root, "R", "interactions-app", "app.R")
+  )
+  ok <- file.copy(src, file.path(stage, basename(src)), overwrite = TRUE)
+  stopifnot("Could not stage the app files into the export dir" = all(ok))
 
-# 1) Make sure the pinned versions are installed (fast, uvr cache).
-uvr::sync()
+  # 1) Make sure the pinned versions are installed (fast, uvr cache).
+  uvr::sync()
 
-# 2) Export. `prepare_wasm_metadata()` reads packageDescription() from
-#    `.uvr/library/` (first on .libPaths()) -> the reporting field = pinned versions.
-shinylive::export(stage, docs)
+  # 2) Export. `prepare_wasm_metadata()` reads packageDescription() from
+  #    `.uvr/library/` (first on .libPaths()) -> the reporting field = pinned versions.
+  shinylive::export(stage, docs)
 
-cat("Export finished to", docs, "\n")
-cat("Manifest: ", file.path(docs, "shinylive", "webr", "packages", "metadata.rds"),
-    "\n", sep = "")
+  cat("Export finished to", docs, "\n")
+  cat("Manifest: ", file.path(docs, "shinylive", "webr", "packages", "metadata.rds"),
+      "\n", sep = "")
+}
+
+main(root)
