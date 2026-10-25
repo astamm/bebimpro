@@ -1052,7 +1052,7 @@ plot_graph_static <- function(gdata) {
   # Frame of reference (window 1): same coordinate frame as each window in the app.
   plot_subgraph(
     g, gdata$layouts[[1]],
-    title = "Graphe d'interactions (exemple)",
+    title = "Graphe des interactions (exemple)",
     subtitle = "Ensemble des types d'interaction observés"
   )
 }

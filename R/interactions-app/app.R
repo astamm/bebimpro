@@ -41,8 +41,15 @@ id_safe <- function(x) gsub("[^A-Za-z0-9]", "", x)
 # 276px) -> we widen .popover here. As it is the page's only popover, a global
 # rule has no side effects.
 ui <- page_sidebar(
-  title = "Réseaux avec ggraph et Shinylive (plot_subgraph_layers)",
-  theme = bs_theme(version = 5),
+  title = "Bebimpro · Exploration interactive par simulation",
+  theme = bs_theme(
+    version = 5,
+    # `sketchy` evokes the childlike look of hand-drawn / colouring-book
+    # sketches, fitting the project's toddlers; the primary is warmed to an
+    # apricot to keep the interface gentle rather than stark.
+    bootswatch = "sketchy",
+    primary = "#e8845c"
+  ),
   tags$head(tags$style(HTML(".popover { max-width: 640px; }"))),
   sidebar = sidebar(
     # Default sidebar WIDTH: we do not widen it (that would come at the expense
@@ -186,7 +193,7 @@ ui <- page_sidebar(
   card(
     full_screen = TRUE,
     card_header(
-      "Graphe d'interactions",
+      "Graphe des interactions",
       popover(
         actionButton("legend_btn", "Légende",
                      class = "btn-outline-secondary btn-sm"),
