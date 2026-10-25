@@ -1,0 +1,87 @@
+# Deploy Bebimpro app to GitHub Pages.
+#
+# Reuses the local `export-docs.R` strategy (flat staging copy -> uvr::sync ->
+# shinylive::export) but runs it in CI, then deploys to GitHub Pages via
+# actions/deploy-pages. The runner installs R, the R wrapper `uvr` plus its
+# binary, runs `uvr::sync()` (pinned versions from uvr.lock), then exports
+# exactly as a local export run from the root would. A single source of truth:
+# `R/graph-model.R` + `R/interactions-app/`, and one script (export-docs.R) for
+# both local and CI.
+
+name: Deploy app to GitHub Pages
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Trigger on push to main
+  push:
+    branches: ["main"]
+
+# Avoid concurrent deployments.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write      # to deploy to Pages
+  id-token: write   # verify the deployment comes from a valid source
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # R at the version pinned by uvr (.r-version = 4.6.1).
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.6.1"
+          use-public-rspm: true
+
+      - name: Install uvr (R wrapper + binary) and shinylive
+        shell: Rscript {0}
+        run: |
+          install.packages("remotes")
+          remotes::install_cran("shinylive")
+          remotes::install_github("nbafrank/uvr-r")
+          # Install the uvr (CLI) binary; placed in the home directory, added to PATH below.
+          uvr::install_uvr()
+
+      # Build the pinned library (.uvr/library/). On the next R startup the root
+      # .Rprofile then prepends .uvr/library onto .libPaths().
+      - name: Sync pinned packages (uvr)
+        shell: Rscript {0}
+        run: |
+          uvr::sync()
+
+      # Same script as the local export: stages a flat copy, re-syncs (no-op) and
+      # exports to docs/. The .Rprofile links .uvr/library -> pinned versions feed
+      # the reporting field of metadata.rds.
+      - name: Export app to docs/
+        shell: Rscript {0}
+        run: |
+          source("export-docs.R")
+
+      # Archive docs/ for the Pages deployment.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

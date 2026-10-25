@@ -1,0 +1,42 @@
+# ================================================================
+# THIS REPO VERSIONS ONLY THE BEBIMPRO SHINY APP + DEPLOY/UVR CONFIG.
+#
+# The repo is rooted at `bebimpro-public/`, but git tracks a strict
+# whitelist: only files the GitHub Pages app needs to build and run.
+# Everything else (research docs, reports, slides, admin, and especially
+# `varades/data/` — the confidential edges/nodes/subject tables, and the
+# consent PDFs) is intentionally excluded from git and from the public
+# deployment. uvr independently continues to manage the WHOLE
+# `bebimpro-public` folder locally; git and uvr are independent.
+# ================================================================
+
+# --- 1) Ignore everything at the repo root by default ---
+/*
+
+# --- 2) Re-include the directories that lead to tracked files ---
+!/.github/
+!/R/
+!/R/interactions-app/
+
+# --- 3) Re-include the tracked (app + deploy + uvr config) files ---
+!.github/workflows/
+!.github/workflows/deploy.yaml
+!/R/graph-model.R
+!/R/interactions-app/app.R
+!/R/interactions-app/app-utils.R
+!/export-docs.R
+!/README.md
+!/uvr.toml
+!/uvr.lock
+!.Rprofile
+!.r-version
+!.gitignore
+
+# --- 4) Re-exclude non-app files that fall inside whitelisted dirs ---
+#     (the Shiny app needs only graph-model.R + app-utils.R + app.R)
+/R/generate-xspf.R
+/R/video-utils.R
+
+# --- 5) Never commit generated state or private content, even if a
+#        whitelisted path ever grows one ---
+**/.DS_Store
