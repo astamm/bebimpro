@@ -33,7 +33,9 @@ app_files <- c("app.R", "app-utils.R", "graph-model.R")
 # Build the flat staging copy in a temporary directory and always clean it up,
 # even if the export fails partway through.
 stage <- tempfile("bebimpro-stage-")
-dir.create(stage)
+# recursive=TRUE + showWarnings=FALSE so staging is self-contained even if the
+# parent temp dir is missing (seen in CI); tempfile() guarantees the path is unique.
+dir.create(stage, recursive = TRUE, showWarnings = FALSE)
 on.exit(unlink(stage, recursive = TRUE), add = TRUE)
 
 src <- c(
@@ -41,7 +43,8 @@ src <- c(
   file.path(root, "R", "interactions-app", "app-utils.R"),
   file.path(root, "R", "interactions-app", "app.R")
 )
-file.copy(src, file.path(stage, basename(src)))
+ok <- file.copy(src, file.path(stage, basename(src)), overwrite = TRUE)
+stopifnot("Could not stage the app files into the export dir" = all(ok))
 
 # 1) Make sure the pinned versions are installed (fast, uvr cache).
 uvr::sync()
